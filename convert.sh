@@ -1,0 +1,2 @@
+python regenerate_libero_dataset.py --libero_task_suite libero_goal --libero_raw_data_dir /Users/lochathien/Documents/Code/modified_libero_rlds/libero_goal_raw --libero_target_dir convert_rel_to_abs/libero_goal_no_noops 
+python libero_h5.py --src-paths convert_rel_to_abs/libero_goal_no_noops --output-path libero_goal_no_noops_abs --dataset-type abs_quat --repo-id locht131/libero_goal_no_noops_abs --push-to-hub
