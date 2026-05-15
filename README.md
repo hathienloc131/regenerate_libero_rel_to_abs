@@ -100,6 +100,7 @@ python libero_h5.py \
 |---|---|---|
 | `standard` | 7 `[x, y, z, ax, ay, az, gripper]` | Axis-angle |
 | `abs_quat` | 8 `[x, y, z, qx, qy, qz, qw, gripper]` | Quaternion |
+| `mimicgen` | 7 `[x, y, z, ax, ay, az, gripper]` | Axis-angle |
 
 ### Combining multiple suites
 
