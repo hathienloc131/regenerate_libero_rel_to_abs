@@ -39,39 +39,24 @@ LIBERO_FEATURES = {
 MIMICGEN_FEATURES = {
     "observation.images.image": {
         "dtype": "video",
-        "shape": (84, 84, 3),
+        "shape": (84,84,3),
         "names": ["height", "width", "rgb"],
     },
 
     "observation.images.wrist_image": {
         "dtype": "video",
-        "shape": (84, 84, 3),
+        "shape": (84,84,3),
         "names": ["height", "width", "rgb"],
     },
-    "observation.states.state": {
+    "observation.state": {
         "dtype": "float32",
-        "shape": (9,),
-        "names": {"motors": ["x", "y", "z", "ww", "wx", "wy", "wz", "gripper", "gripper"]},
-    },
-    "observation.states.robot0_eef_pos": {
-        "dtype": "float32",
-        "shape": (3,),
-        "names": {"motors": ["x", "y", "z"]},
-    },
-    "observation.states.robot0_eef_quat": {
-        "dtype": "float32",
-        "shape": (4,),
-        "names": {"motors": ["w", "x", "y", "z"]},
-    },
-    "observation.states.robot0_gripper_qpos": {
-        "dtype": "float32",
-        "shape": (2,),
-        "names": {"motors": ["gripper", "gripper"]},
+        "shape": (8,),
+        "names": {"motors": ["x", "y", "z", "ax", "ay", "az", "gripper"]},
     },
     "action": {
         "dtype": "float32",
         "shape": (7,),
-        "names": {"motors": ["x", "y", "z", "roll", "pitch", "yaw", "gripper"]},
+        "names": {"motors": ["x", "y", "z", "ax", "ay", "az", "gripper"]},
     },
 }
 
@@ -88,8 +73,31 @@ LIBERO_ABS_STANDARD_FEATURES = {
     },
     "observation.state": {
         "dtype": "float32",
+        "shape": (8,),
+        "names": {"motors": ["x", "y", "z", "ax", "ay", "az", "gripper", "gripper"]},
+    },
+    "action": {
+        "dtype": "float32",
         "shape": (7,),
         "names": {"motors": ["x", "y", "z", "ax", "ay", "az", "gripper"]},
+    },
+}
+
+MIMICGEN_ABS_FEATURES = {
+    "observation.images.image": {
+        "dtype": "video",
+        "shape": (256, 256, 3),
+        "names": ["height", "width", "rgb"],
+    },
+    "observation.images.wrist_image": {
+        "dtype": "video",
+        "shape": (256, 256, 3),
+        "names": ["height", "width", "rgb"],
+    },
+    "observation.state": {
+        "dtype": "float32",
+        "shape": (8,),
+        "names": {"motors": ["x", "y", "z", "ax", "ay", "az", "gripper_l", "gripper_r"]},
     },
     "action": {
         "dtype": "float32",

@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import re
 import shutil
@@ -16,9 +17,9 @@ from lerobot.datasets.utils import (
     write_info,
     write_task,
 )
-from libero_utils.config import LIBERO_FEATURES, LIBERO_ABS_QUAT_FEATURES, LIBERO_ABS_STANDARD_FEATURES
+from libero_utils.config import MIMICGEN_FEATURES, MIMICGEN_ABS_FEATURES, LIBERO_FEATURES, LIBERO_ABS_QUAT_FEATURES, LIBERO_ABS_STANDARD_FEATURES
 from libero_utils.lerobot_utils import validate_all_metadata
-from libero_utils.libero_utils import load_local_episodes, load_local_episodes_abs_quat
+from libero_utils.libero_utils import load_local_episodes, load_local_episodes_abs_quat, load_local_episodes_mimicgen, load_local_episodes_mimicgen_abs
 from ray.runtime_env import RuntimeEnv
 from tqdm import tqdm
 
@@ -54,7 +55,10 @@ class SaveLerobotDataset(PipelineStep):
         if self.dataset_type == "abs_quat":
             features = LIBERO_ABS_QUAT_FEATURES
             episode_loader = load_local_episodes_abs_quat
-        else:
+        elif self.dataset_type == "mimicgen":
+            features = MIMICGEN_FEATURES
+            episode_loader = load_local_episodes_mimicgen
+        elif self.dataset_type == "standard":
             features = LIBERO_ABS_STANDARD_FEATURES
             episode_loader = load_local_episodes
 
@@ -261,13 +265,23 @@ def main(
     push_only: bool = False,
     max_episodes_per_task: int = None,
     dataset_type: str = "standard",
+    run_tasks: list[str] = None,
 ):
+    language_instructions = {}
+    for src_path in src_paths:
+        json_path = src_path / "language_instruction.json"
+        if json_path.exists():
+            with open(json_path) as f:
+                language_instructions.update(json.load(f))
+
     tasks = []
     pattern1 = re.compile(r"_SCENE\d+_(.*?)_demo\.hdf5")  # LIBERO format: *_SCENE*_<task>_demo.hdf5
     pattern2 = re.compile(r"(.*?)_demo\.hdf5")  # LIBERO format: <task>_demo.hdf5
     pattern3 = re.compile(r"(.+?)_d\d+\.hdf5")  # MimicGen format: <task>_d<num>.hdf5 (e.g., coffee_d2.hdf5)
     for src_path in src_paths:
         for input_h5 in src_path.glob("*.hdf5"):
+            if input_h5.name.startswith("._"):
+                continue
             match = pattern1.search(input_h5.name)
             if match is None:
                 match = pattern2.search(input_h5.name)
@@ -275,13 +289,16 @@ def main(
                     match = pattern3.search(input_h5.name)
                     if match is None:
                         continue
-            tasks.append(
-                (
-                    input_h5,
-                    (output_path / (src_path.name + "_temp") / input_h5.stem).resolve(),
-                    match.group(1).replace("_", " "),
+            task_name = match.group(1)
+            task_instruction = language_instructions.get(task_name, task_name.replace("_", " "))
+            if not run_tasks or task_name in run_tasks:
+                tasks.append(
+                    (
+                        input_h5,
+                        (output_path / (src_path.name + "_temp") / input_h5.stem).resolve(),
+                        task_instruction,
+                    ) 
                 )
-            )
     print(f"Total tasks: {tasks}")
     if len(src_paths) > 1:
         aggregate_output_path = output_path / ("_".join([src_path.name for src_path in src_paths]) + "_aggregated_lerobot")
@@ -334,14 +351,14 @@ def main(
         **({"cpus_per_task": cpus_per_task, "tasks_per_job": tasks_per_job} if executor is RayPipelineExecutor else {}),
     }
 
-    executor(pipeline=[SaveLerobotDataset(tasks, max_episodes_per_task=max_episodes_per_task, dataset_type=dataset_type)], **executor_config, logging_dir=resume_from_save).run()
+    executor(pipeline=[SaveLerobotDataset(tasks, max_episodes_per_task=max_episodes_per_task, dataset_type=dataset_type)], **executor_config, logging_dir=str(resume_from_save) if resume_from_save else None).run()
     executor(
         pipeline=[DeleteTempData([task[1] for task in tasks])],
         **executor_config,
         depends=executor(
             pipeline=[AggregateDatasets([task[1] for task in tasks], aggregate_output_path)],
             **executor_config,
-            logging_dir=resume_from_aggregate,
+            logging_dir=str(resume_from_aggregate) if resume_from_aggregate else None,
         ),
     ).run()
 
@@ -379,7 +396,8 @@ if __name__ == "__main__":
     parser.add_argument("--push-to-hub", action="store_true", help="upload to hub")
     parser.add_argument("--push-only", action="store_true", help="skip conversion and push existing dataset to hub")
     parser.add_argument("--max-episodes-per-task", type=int, default=None, help="maximum number of episodes to convert per task (default: all)")
-    parser.add_argument("--dataset-type", type=str, choices=["standard", "abs_quat"], default="standard", help="standard: MimicGen format; abs_quat: absolute axis-angle actions converted to quaternion")
+    parser.add_argument("--run-tasks", type=str, nargs="+", help="list of tasks to run")
+    parser.add_argument("--dataset-type", type=str, choices=["standard", "abs_quat", "mimicgen"], default="standard", help="standard: MimicGen format; abs_quat: absolute axis-angle actions converted to quaternion")
     args = parser.parse_args()
 
     main(**vars(args))

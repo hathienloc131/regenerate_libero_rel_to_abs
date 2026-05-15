@@ -153,3 +153,18 @@ After Step 2, the LeRobot dataset is written to:
 <output-path>/<src-dir-name>_lerobot/      # single source
 <output-path>/<src1>_<src2>_aggregated_lerobot/  # multiple sources
 ```
+
+
+
+coffee_d2 
+coffee_preparation_d1 
+hammer_cleanup_d1 
+kitchen_d1 
+mug_cleanup_d1 
+nut_assembly_d0 
+pick_place_d0 
+square_d2 
+stack_d1 
+stack_three_d1 
+threading_d2 
+three_piece_assembly_d2
